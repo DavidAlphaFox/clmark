@@ -20,7 +20,7 @@
                       "(\\n|\\r|\\r\\n)")
                   string))
 
-(defun parse-string (string enabled-blocks &key double-escaped)
+(defun parse-block-structure (string enabled-blocks &key double-escaped)
   (let ((root (make-instance 'document-node
                              :children nil
                              :open? t
@@ -73,6 +73,15 @@
                   (add-remaining-text-to-innermost-child root line)
                   (unless to-open
                     (close-blocks root to-close))))))))))
+
+(defun parse-string (string enabled-blocks &key double-escaped)
+  (parse-block-structure string enabled-blocks :double-escaped double-escaped))
+
+(defun parse-inline-string (string enabled-inline)
+  ())
+
+(defun parse-inline-structure (root)
+  )
 
  ;;; Begin node specific parsers
 
