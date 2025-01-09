@@ -22,3 +22,10 @@
 (defmethod check-line-satisfies-block-and-advance ((block atx-heading) line)
   ;; Return nil because an atx heading can only last for one line
   nil)
+
+(defmethod render ((node atx-heading) (as (eql :html)) stream)
+  (with-tags (stream
+              ("<h~D>" (atx-header-level node))
+              ("</h~D>" (atx-header-level node)))
+    (loop for text in (node-text node)
+          do (render text as stream))))

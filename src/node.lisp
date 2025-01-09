@@ -20,8 +20,12 @@
 
  ; Begin block nodes
 (dc document-node (block-node parent-node) (document-block-parsers))
+
 (defmethod check-line-satisfies-block-and-advance ((block document-node) line)
   t)
+
+(defmethod render ((node document-node) as stream)
+  (render-children node :stream stream :style as))
 
 (defmacro defblock ((blockname open-regex remain-open-regex close-regex
                      &key (dc t))

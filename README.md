@@ -8,6 +8,10 @@ CLMARK implements a line-by-line markdown parser with extensible node types. The
 general algorithm used is a variant of the one presented in the commonmark
 specification (as of version 31.2).
 
+There are two systems defined in `clmark.asd`: `#:CLMARK` and
+`#:CLMARK-COMMONMARK`. The former loads the parser and block definition
+facilities, while the latter loads the commonmark block definitions.
+
 ## Extending the Block Structure
 
 A simple block is somewhat easy to implement. As an example lets look at the

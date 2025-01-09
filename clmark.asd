@@ -1,30 +1,20 @@
 
 (asdf:defsystem #:clmark
+  :author "Lillia Friedel"
+  :license "LGPLv3"
   :depends-on (#:cl-ppcre)
   :serial t
   :components ((:module :src
                 :components ((:file "package")
                              (:file "utilities")
                              (:file "node")
-                             ;; (:module :nodes
-                             ;;  :components ((:file "atx-heading")
-                             ;;               (:file "block-quote")
-                             ;;               (:file "bullet-list")
-                             ;;               (:file "fenced-code-block")
-                             ;;               (:file "indented-code-block")
-                             ;;               (:file "list-container")
-                             ;;               (:file "paragraphs")
-                             ;;               (:file "spoiler")
-                             ;;               (:file "thematic-break")))
                              (:file "parse")
-                             (:module :render
-                              :components
-                              ((:file "render")
-                               (:file "html")))))))
+                             (:file "render")))))
 
-(asdf:defsystem #:clmark-commonmark
+(asdf:defsystem #:clmark/commonmark
+  :license "BSD3"
   :depends-on (#:clmark)
-  :components ((:module :commonmark-nodes
+  :components ((:module "src/nodes/commonmark-nodes/"
                 :components ((:module :block-nodes
                               :components ((:file "atx-heading")
                                            (:file "block-quote")
@@ -33,5 +23,13 @@
                                            (:file "indented-code-block")
                                            (:file "list-container")
                                            (:file "paragraphs")
-                                           (:file "spoiler")
                                            (:file "thematic-break")))))))
+
+(asdf:defsystem #:clmark/custom
+  :license "BSD3"
+  :depends-on (#:clmark)
+  :components ((:module "src/nodes/custom-nodes/"
+                :components ((:module :block-nodes
+                              :components ((:file "spoiler")))))))
+
+
