@@ -1,6 +1,11 @@
 
 (in-package #:clmark)
 
+(defmacro breaklet ((var &optional string args) &body forms)
+  `(let ((,var (progn ,@forms)))
+     (break ,(or string "BREAKLET GOT: ~S") ,@(or args (list var)))
+     ,var))
+
 (defvar +null-regex+ "$^"
   "The null regex will never match a string, because it is looking for the end of a
 line/string followed by the beginning of a line/string.")
@@ -48,3 +53,34 @@ for an open/satisfies/close condition for a line.")
       (when (funcall predicate (funcall key (car els)))
         (when return-matches (push (car els) reter))
         (incf i)))))
+
+(defmacro with-array-elements ((varlist array &key bind-nil-on-error) &body body)
+  (let ((a (gensym)))
+    `(let* ((,a ,array)
+            ,@(loop for i from 0
+                    for var in varlist
+                    if bind-nil-on-error
+                      collect `(,var (ignore-errors (aref ,a ,i)))
+                    else
+                      collect `(,var (aref ,a ,i))))
+       ,@body)))
+
+(defun typedp (thing)
+  (lambda (el)
+    (typep el thing)))
+
+(defmacro with-mvb-split ((var1 var2) arg &body body)
+  (let ((a (gensym)))
+    `(let ((,a ,arg))
+       (multiple-value-bind (,var1 ,var2)
+           (if (atom ,a) (list ,a) (values (car ,a) (cdr ,a)))
+         ,@body))))
+
+(defmacro with-tags ((stream open-and-args close-and-args) &body body)
+  (with-mvb-split (open oargs) open-and-args
+    (with-mvb-split (close cargs) close-and-args
+      (let ((s (gensym)))
+        `(let ((,s ,stream))
+           (apply #'format ,s ,open (list ,@oargs))
+           (unwind-protect (progn ,@body)
+             (apply #'format ,s ,close (list ,@cargs))))))))
