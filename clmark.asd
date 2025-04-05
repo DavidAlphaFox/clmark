@@ -21,9 +21,12 @@
                                            (:file "bullet-list")
                                            (:file "fenced-code-block")
                                            (:file "indented-code-block")
-                                           (:file "list-container")
+                                           ;; (:file "list-container")
                                            (:file "paragraphs")
-                                           (:file "thematic-break")))))))
+                                           (:file "thematic-break")))
+                             (:module :inline-nodes
+                              :components ((:file "emphasis")
+                                           (:file "images")))))))
 
 (asdf:defsystem #:clmark/custom
   :license "BSD3"
