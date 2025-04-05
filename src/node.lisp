@@ -174,6 +174,13 @@
           (incf *line-position* e)
           t)))))
 
+ ; iterate all blocks
+
+(defun iterate-blocks (node function)
+  (funcall function node)
+  (loop for c in (ignore-errors (children node))
+        do (iterate-blocks c function)))
+
  ; iterate over open blocks
 (defun %iterate-open-blocks (node function)
   (funcall function node)
@@ -243,3 +250,119 @@
   (map nil
        #'(lambda (b) (close-block root b))
        (ignore-errors (children block))))
+
+(defgeneric postprocess-block-structure (root)
+  (:method (root)
+    t))
+
+ ; inline nodes
+
+;; Ok so to process inlines we walk through and whenever an inline should OPEN
+;; we will push a new node with a start index onto our node stack. We also 
+
+(defgeneric process-text-for-inline-node (parent inline-node text enabled-inlines)
+  )
+
+(defgeneric delim-match (node text &key start delimiter)
+  (:method ((node inline-node) text &key (start 0) (delimiter :open))
+    (string= (ecase delimiter
+               (:open (open-delimiter node))
+               (:close (close-delimiter node)))
+             (subseq text start))))
+
+;; (defun delim-match (delimiter text &key (start 0))
+;;   (string= (subseq text start (length delimiter)) delimiter))
+
+(defun delim-match-any (string enabled-inlines open-inlines)
+  
+  (let ((to-open (loop for inline in enabled-inlines
+                       when (delim-match inline string
+                                         :delimiter :open)
+                         collect inline))
+        (to-close (loop for inline in open-inlines
+                        when (delim-match inline string
+                                          :delimiter :close)
+                          collect inline)))
+    (if (and (null to-open) (null to-close))
+        (values nil nil nil)
+        (values t to-open to-close))))
+
+
+;; When handling multiple delimiters at the same index, we take the one with the
+;; longest delimiter match. I.e. if given the string "***" it will open a
+;; potential emphasis node and strong node, all at the same point. The strong
+;; node has a delimiter of **, so it gets taken first. Then we continue
+;; processing without the emphasis node. And lo and behold the first thing we
+;; get is a delimiter opening an emphasis node.
+(defgeneric process-text-for-inline-nodes (parent-block-node enabled-inlines)
+  ;; The idea behind this is to walk through the inline text (with newlines,
+  ;; because inline can span a \\n) and register where we encounter
+  ;; delimiters. Then when we encounter a specific closing delimiter, we walk
+  ;; *back* through the text to find its opener. We can do that by going back
+  ;; through the open nodes (in reverse) until we find a matching opening
+  ;; delimiter. Then we take the text for that delimiter and if applicable
+  ;; re-parse it (because any potential openers are now invalid). When we hit
+  ;; the end of the text, we walk back and resolve any 
+  ;; (:method (node enabled)
+  ;;   (let ((text (format nil "~{~A~^~%~}" (node-text node)))
+  ;;         (stack nil)
+  ;;         escaped)
+  ;;     (loop for i from 0
+  ;;           for subtext = (subseq text i)
+  ;;           do (cond (escaped
+  ;;                     (setf escaped nil))
+  ;;                    ((char= #\\ (char subtext 0))
+  ;;                     (setf escaped t))
+  ;;                    (t
+  ;;                     (let ((open (find-opening-delims subtext enabled)))
+  ;;                       (cond ((null (cdr open))
+  ;;                              (push (make-instance (class-of open) :text-start i)
+  ;;                                    stack))
+  ;;                             (open
+  ;;                              (setf stack
+  ;;                                    (append (mapcar (lambda (el)
+  ;;                                                      (make-instance
+  ;;                                                       (class-of el)
+  ;;                                                       :text-start i))
+  ;;                                                    open)
+  ;;                                            stack))))))))
+  ;;     (postprocess-inline-structure
+  ;;      ;; POSTPROCESS-INLINE-STRUCTURE should take a list of nodes that are
+  ;;      ;; known to be valid (e.g. emphasis and strong nodes directly following
+  ;;      ;; each other are properly handled and not just an open-close-open of
+  ;;      ;; emphasis nodes) and determine the end index of every node.
+  ;;      text
+  ;;      (let ((min 0))
+  ;;        (do ((nodes (nreverse stack) (cdr nodes))
+  ;;             (ac nil))
+  ;;            ((null nodes) (nreverse ac))
+  ;;          (if (> (text-start node) min)
+  ;;              (multiple-value-bind (node next-nodes)
+  ;;                  (determine-following-nodes (car nodes) (cdr nodes))
+  ;;                ;; DETERMINE-FOLLOWING-NODES should remove any illegal nodes
+  ;;                ;; and return the new node list as NEXT-NODES, and return a
+  ;;                ;; created node
+  ;;                (incf min (length (open-delimiter node)))
+  ;;                (push node ac)
+  ;;                (setf nodes next-nodes))))))))
+  )
+
+;; (defgeneric determine-following-nodes (node following-nodes)
+;;   (:method (node rest)
+;;     ()))
+
+(defun find-opening-delims (string enabled)
+  (loop for node in enabled
+        if (delim-match node string :delimiter :open)
+          collect node))
+
+(defun find-closing-delims (string stack)
+  (loop for node in stack
+        if (delim-match node string :delimiter :close)
+          collect node))
+
+;; (defun postprocess-inline-structure (nodes text)
+;;   (loop for node in nodes
+;;         do (setf (text node) (subseq text (text-start node) (text-end node)))))
+
+;; (defgeneric postprocess-inline-structure (node))
