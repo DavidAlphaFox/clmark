@@ -2,7 +2,7 @@
 (in-package :clmark)
 
 (defblock (atx-heading
-           "\\s{0,3}#{1,6}\\s?"
+           "^\\s{0,3}#{1,6}\\s?"
            +null-regex+
            +null-regex+)
           (leaf-block-node child-node)
