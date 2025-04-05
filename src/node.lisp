@@ -62,6 +62,98 @@
      (defmethod line-satisfies-block ((block (eql ',blockname)) line)
        (cl-ppcre:scan ,remain-open-regex line))))
 
+(defmacro definline ((name open-delim close-delim &key (dc t))
+                     supers slots &body options)
+  (let ((defins (assoc :default-initargs options)))
+    (if defins
+        (setf defins `(,(car defins)
+                       :open-delimiter ,open-delim
+                       :close-delimiter ,close-delim
+                       ,@(cdr defins)))
+        (setf defins `(:default-initargs :open-delimiter ,open-delim
+                                         :close-delimiter ,close-delim
+                                         )))
+    (let ((options (remove :default-initargs options :key #'car)))
+      `(,(if dc 'dc 'defclass) ,name ,supers ,slots ,@options ,defins))))
+
+(defmacro define-simple-open-delimiter-processor
+    (node-type (&optional stack-var node-var string-var index-var)
+     &key try-close-open-nodes)
+  (let ((stack-var (or stack-var (gensym "STACK-VAR")))
+        (node-var (or node-var (gensym "NODE-VAR")))
+        (string-var (or string-var (gensym "STRING-VAR")))
+        (index-var (or index-var (gensym "INDEX-VAR"))))
+    `(defmethod process-open-delimiter (,stack-var (,node-var ,node-type)
+                                        ,string-var ,index-var)
+       (flet ((do1 ()
+                (let ((id1 (+ ,index-var (length (open-delimiter ,node-var)))))
+                  (values (cons (make-instance ',node-type
+                                               :open-delimiter-start ,index-var
+                                               :open-delimiter-end id1
+                                               :text-start id1
+                                               :active? t)
+                                ,stack-var)
+                          id1)))
+              ,@(when try-close-open-nodes
+                  `((do2 (close-nodes)
+                         (let ((to-close (car (sort close-nodes #'>
+                                                    :key #'text-start))))
+                           (setf (close-delimiter-start to-close) ,index-var
+                                 (close-delimiter-end to-close) (+ ,index-var
+                                                                   (length
+                                                                    (close-delimiter
+                                                                     to-close)))
+                                 (text-end to-close) ,index-var
+                                 (active? to-close) nil)
+                           (values ,stack-var
+                                   (+ ,index-var (length (close-delimiter
+                                                          to-close)))))))))
+         ,(cond ((eq try-close-open-nodes t)
+                 `(let* ((active (remove-if-not #'active? ,stack-var))
+                         (close-nodes (remove-if-not (typedp ',node-type) active)))
+                    (if close-nodes
+                        (do2 close-nodes)
+                        (do1))))
+                ((eq try-close-open-nodes nil)
+                 `(do1))
+                (t
+                 `(if ,try-close-open-nodes
+                      (let* ((active (remove-if-not #'active?
+                                                    ,stack-var))
+                             (close-nodes (remove-if-not (typedp ',node-type)
+                                                         active)))
+                        (if close-nodes
+                            (do2 close-nodes)
+                            (do1)))
+                      (do1))))))))
+
+(defmacro define-simple-close-delimiter-processor
+    (node-type (&optional stack-var node-var string-var index-var))
+  (let ((stack-var (or stack-var (gensym "STACK-VAR")))
+        (node-var (or node-var (gensym "NODE-VAR")))
+        (string-var (or string-var (gensym "STRING-VAR")))
+        (index-var (or index-var (gensym "INDEX-VAR"))))
+    `(defmethod process-close-delimiter (,stack-var (,node-var ,node-type)
+                                         ,string-var ,index-var)
+       (let* ((active (remove-if-not #'active? ,stack-var))
+              (current (car (sort (remove-if-not (typedp ',node-type) active) #'>
+                                  :key #'text-start))))
+         (if current
+             (progn
+               (setf (close-delimiter-start current) ,index-var
+                     (close-delimiter-end current) (+ ,index-var
+                                                      (length (close-delimiter
+                                                               current)))
+                     (text-end current) ,index-var
+                     (active? current) nil)
+               (values ,stack-var
+                       (+ ,index-var (length (close-delimiter
+                                              current)))
+                       t))
+             (values ,stack-var
+                     ,index-var
+                     nil))))))
+
  ; helper functions
 
 (defgeneric check-line-opens-block-and-advance (block line)
