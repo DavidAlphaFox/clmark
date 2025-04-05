@@ -24,3 +24,12 @@
         (setf (spoiler-header block) (subseq line e))
         (finish-line line)
         t))))
+
+(defmethod render ((node spoiler) (as (eql :html)) stream)
+  (with-tags (stream ("<details>") ("</details>"))
+    (with-tags (stream ("<summary>") ("</summary>"))
+      (cond ((spoiler-header node)
+             (write-string (spoiler-header node) stream))
+            (t 
+             (render-text node :stream stream :style as))))
+    (render-children node :stream stream :style as)))
