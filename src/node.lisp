@@ -1,7 +1,8 @@
 
 (in-package :clmark)
 
-(dc parser-node)
+ ; general class shape&structure
+(dc parser-node () (rendered-text))
 
 (dc parent-node (parser-node)
     (children)
@@ -10,6 +11,21 @@
 (dc child-node (parser-node)
     (parent)
   (:default-initargs :parent nil))
+
+(dc inline-node (child-node parser-node)
+    (node-text root
+               self-contained-p
+               (regexp :initarg :regexp :accessor regexp :initform nil)
+               
+               open-delimiter close-delimiter
+               open-delimiter-start open-delimiter-end
+               close-delimiter-start close-delimiter-end
+               text-start text-end
+               
+               close-immediately ;; process-closing-delimiter
+               active?
+               enabled-subparsers)
+  (:default-initargs :self-contained-p nil))
 
 (dc %block-node (parser-node)
     (open? node-text #| start-index end-index |# root))
