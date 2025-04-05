@@ -7,3 +7,6 @@
            +null-regex+)
           (leaf-block-node child-node)
           ())
+
+(defmethod render ((node thematic-break) (as (eql :html)) stream)
+  (format stream "<hr/>"))
