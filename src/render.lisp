@@ -19,8 +19,10 @@
 
 (defun render-text (object &key (stream *current-rendering-stream*)
                              (style *current-rendering-style*))
-  (loop for text in (node-text object)
-        do (render text style stream)))
+  (if (rendered-text object)
+      (write-string (rendered-text object) stream)
+      (loop for text in (node-text object)
+            do (render text style stream))))
 
 (defmacro defrender (for-class (style stream-argument) &body body)
   (let ((as (gensym)))
