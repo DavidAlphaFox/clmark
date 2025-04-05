@@ -30,14 +30,32 @@
        (declare (ignore ,as))
        ,@body)))
 
-(defmacro with-tags ((stream (open &rest open-args) (close &rest close-args))
-                     &body body)
-  (let ((s (gensym)))
-    `(let ((,s ,stream))
-       ,(if open-args
-            `(apply #'format ,s ,open ,@open-args)
-            `(write-string ,open ,s))
-       (unwind-protect (progn ,@body)
-         ,(if close-args
-              `(apply #'format ,s ,close ,@close-args)
-              `(write-string ,close ,s))))))
+(defun render-inline-stack (stack string as)
+  (with-output-to-string (stream)
+    (do ((i 0 (1+ i))
+         (sl (length string)))
+        ((= i sl))
+      (flet ((setindex (idx &key adjust)
+               (if adjust
+                   (incf i (1- idx))
+                   (setf i (1- idx)))))
+        (let ((open (find i stack :key #'open-delimiter-start))
+              (close (find i stack :key #'close-delimiter-start)))
+          (cond ((and open close)
+                 (error
+                  "Nodes cannot open on a character that closes another node"))
+                ((and open (self-contained-p open))
+                 (let ((new-idx (render-node open string as stream)))
+                   (setindex new-idx :adjust nil)))
+                ((and close (not (self-contained-p close)))
+                 (render-node-close-delimiter close as stream)
+                 (setindex (length (close-delimiter close)) :adjust t))
+                (open
+                 (render-node-open-delimiter open as stream)
+                 (setindex (length (open-delimiter open)) :adjust t))
+                (t (write-char (char string i) stream))))))))
+
+(defgeneric render-block-inlines (block stack as)
+  (:method ((block %block-node) stack (as (eql :html)))
+    (let ((res (render-inline-stack stack (rendered-text block) as)))
+      (setf (rendered-text block) res))))
