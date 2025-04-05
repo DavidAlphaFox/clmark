@@ -8,15 +8,6 @@
           (leaf-block-node child-node)
           (info-string style))
 
-(defmethod test-print-block ((node fenced-code-block) stream)
-  (format stream
-          "~&FENCED-CODE-BLOCK (info: ~S) - Content:~%~{~A~^~%~}~&END_FENCED_CODE_BLOCK"
-          (info-string node)
-          (remove-if (lambda (el)
-                       (or (null el)
-                           (string= el "")))
-                     (reverse (node-text node)))))
-
 (defmethod check-line-opens-block-and-advance ((block fenced-code-block) line)
   (with-line (line)
     (multiple-value-bind (s e)
@@ -46,4 +37,11 @@
             (incf *line-position* e)
             nil)
           t))))
+
+(defmethod render ((node fenced-code-block) (as (eql :html)) stream)
+  (with-tags (stream
+              ("<pre><code~@[ class=\"language-~A\"~]>"
+               (info-string fenced-code-block))
+              ("</code></pre>"))
+    (format stream "~{~A~^~%~}" (node-text node))))
 
