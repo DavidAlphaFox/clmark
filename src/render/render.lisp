@@ -1,6 +1,21 @@
 
 (in-package #:clmark)
 
+(defgeneric render-node (node string style stream)
+  (:documentation
+   "Used to render nodes that are self-contained. When an opening node is self
+contained it is not rendered as an open and then close delimiter, rather it is
+rendered as a single unit, and must return the new index to continue processing
+from."))
+
+(defgeneric render-node-open-delimiter (node style stream)
+  (:documentation "Used for non-self-contained nodes to render the opening
+delimiter."))
+
+(defgeneric render-node-close-delimiter (node style stream)
+  (:documentation "Used for non-self-contained nodes to render the closing
+delimiter."))
+
 (defvar *current-rendering-style* nil)
 (defvar *current-rendering-stream* nil)
 
