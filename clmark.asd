@@ -1,5 +1,8 @@
 
 (asdf:defsystem #:clmark
+  :depends-on (#:clmark/base #:clmark/commonmark #:clmark/custom))
+
+(asdf:defsystem #:clmark/base
   :author "Lillia Friedel"
   :license "LGPLv3"
   :depends-on (#:cl-ppcre)
