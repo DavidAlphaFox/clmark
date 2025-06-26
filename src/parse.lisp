@@ -32,26 +32,26 @@ node stack."))
 
 (defgeneric looking-at (node string looking-at &key regex)
   (:method (node string looking-at &key regex)
-    (if regex
+    (if regex ;;如果有正则表达式
         (cl-ppcre:scan looking-at string)
         (let ((l (min (length looking-at) (length string))))
           (string= (subseq string 0 l) (subseq looking-at 0 l)))))
   (:method (node string (looking-at function) &key regex)
-    (declare (ignore regex))
-    (funcall looking-at node string)))
+    (declare (ignore regex)) ;;如果looking-at是函数的情况下，直接忽略正则表达式
+    (funcall looking-at node string))) ;;直接调用looking-at函数进行相关操作
 
 ;; (defun looking-at (string looking-at &key regex)
 ;;   (if regex
 ;;       (cl-ppcre:scan looking-at string)
 ;;       (let ((l (min (length looking-at) (length string))))
 ;;         (string= (subseq string 0 l) (subseq looking-at 0 l)))))
-
+;; 行内节点，打开分隔符是否出现
 (defmethod open-delimiter-is-appropriate-p
     ((node inline-node) string (index integer))
-  (let ((s (or (ignore-errors (subseq string index))
+  (let ((s (or (ignore-errors (subseq string index)) ;;在index处切开字串
                (return-from open-delimiter-is-appropriate-p nil))))
     (looking-at node s (open-delimiter node) :regex (regexp node))))
-
+;;行内节点，结束分隔符是否出现
 (defmethod close-delimiter-is-appropriate-p
     ((node inline-node) string (index integer))
   (and (active? node)

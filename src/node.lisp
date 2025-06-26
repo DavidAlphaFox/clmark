@@ -3,15 +3,15 @@
 
  ; general class shape&structure
 (dc parser-node () (rendered-text))
-
+;;父亲节点
 (dc parent-node (parser-node)
     (children)
   (:default-initargs :children nil))
-
+;;儿子节点
 (dc child-node (parser-node)
     (parent)
   (:default-initargs :parent nil))
-
+;;行内节点
 (dc inline-node (child-node parser-node)
     (node-text root
                self-contained-p
@@ -26,12 +26,12 @@
                active?
                enabled-subparsers)
   (:default-initargs :self-contained-p nil))
-
+;; 块节点
 (dc %block-node (parser-node)
     (open? node-text #| start-index end-index |# root))
-
+;; 普通块节点
 (dc block-node (%block-node))
-
+;; 叶子块节点
 (dc leaf-block-node (%block-node))
 
  ; Begin block nodes
@@ -42,7 +42,7 @@
 
 (defmethod render ((node document-node) as stream)
   (render-children node :stream stream :style as))
-
+;;定义块状类的函数
 (defmacro defblock ((blockname open-regex remain-open-regex close-regex
                      &key (dc t))
                     supers slots &body options)
@@ -175,28 +175,28 @@
           t)))))
 
  ; iterate all blocks
-
+;;遍历所有的块，使用的是先序遍历
 (defun iterate-blocks (node function)
   (funcall function node)
-  (loop for c in (ignore-errors (children node))
+  (loop for c in (ignore-errors (children node)) ;;遍历自己的子节点
         do (iterate-blocks c function)))
 
- ; iterate over open blocks
+ ; iterate over open blocks 遍历开放的块，也是使用的先序遍历
 (defun %iterate-open-blocks (node function)
   (funcall function node)
-  (when (and node (ignore-errors (children node)))
+  (when (and node (ignore-errors (children node))) ;;得到自己的子节点
     (multiple-value-bind (exactly objects)
         (exactly-n 1 (children node) #'open? :return-matches t :error nil)
       (declare (ignore exactly))
-      (setf objects (remove-if #'null objects))
+      (setf objects (remove-if #'null objects)) ;;删除objects中所有为null的
       (if (null objects)
-          nil
-          (let ((open-child (car objects)))
+        nil ;;如果是空的objects，直接返回nil
+          (let ((open-child (car objects))) ;;处理打开的子节点
             (%iterate-open-blocks open-child function))))))
 
 (defun iterate-open-blocks (root function &key (invoke-with-root t))
   (when invoke-with-root
-    (funcall function root))
+    (funcall function root)) ;;当需要调用父节点的时候，就执行此处
   (let ((toplevel-open
           (loop for el in (children root) when (open? el) collect el)))
     (assert (null (cdr toplevel-open)))
@@ -204,6 +204,7 @@
       (%iterate-open-blocks (car toplevel-open) function))))
 
 
+;;将节点加入到树中
 (defun add-block-to-tree (root block)
   (flet ((cont (node)
            (when (and (open? node)
