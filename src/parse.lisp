@@ -4,16 +4,16 @@
  ; begin block helpers
 (defvar *line-position* 0
   "Track where in a line we are while parsing")
-
+;;向前吃进amnt个字符
 (defun advance-line (amnt)
   (incf *line-position* amnt))
-
+;;直接向前吃进整个行的字符
 (defun finish-line (line)
   (incf *line-position* (length line)))
 
 (defun preprocess-string (string)
   (subst #\REPLACEMENT_CHARACTER #\Nul string))
-
+;; 将数据拆解成多行
 (defun split-into-lines (string &optional double-escaped)
   ;; (break)
   (cl-ppcre:split (if double-escaped
@@ -73,7 +73,7 @@ are multiple that can be closed from the same text."
         if (close-delimiter-is-appropriate-p node string index)
           collect node))
 
-
+;;处理块状态结构
 (defun parse-block-structure (string enabled-blocks &key double-escaped)
   (let ((root (make-instance 'document-node
                              :children nil

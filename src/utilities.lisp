@@ -16,11 +16,11 @@ will always return a start and end of 0 and 0.
 
 This is intended to be used to prevent advancing *line-position* while checking
 for an open/satisfies/close condition for a line.")
-
+;;一行内部分数据的操作宏
 (defmacro with-line ((line &optional (offset '*line-position*)) &body body)
   (let ((l (gensym)))
     `(let* ((,l ,line)
-            (,line (subseq ,l ,offset)))
+            (,line (subseq ,l ,offset))) ;;使用局部变量遮蔽
        ,@body)))
 ;;构建class的宏，自动为每个slot添加initarg和accessor
 (defmacro dc (name &optional supers slots &body options)
