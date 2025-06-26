@@ -22,10 +22,10 @@ for an open/satisfies/close condition for a line.")
     `(let* ((,l ,line)
             (,line (subseq ,l ,offset)))
        ,@body)))
-
+;;构建class的宏，自动为每个slot添加initarg和accessor
 (defmacro dc (name &optional supers slots &body options)
   (let ((slots (mapcar (lambda (slot)
-                         (if (atom slot)
+                         (if (atom slot) ;;只有是原子的时候才会对slot进行操作
                              `(,slot :initarg ,(intern (string slot)
                                                        (find-package :keyword))
                                      :accessor ,slot)
